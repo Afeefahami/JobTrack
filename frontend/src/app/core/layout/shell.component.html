@@ -1,0 +1,106 @@
+<div class="shell">
+  <aside class="sidebar" [class.open]="menuOpen()" aria-label="Main navigation">
+    <div class="brand">
+      <a routerLink="/dashboard" aria-label="JobTrack home"><app-logo [light]="true" /></a>
+      <button type="button" class="btn-icon close" aria-label="Close menu" (click)="menuOpen.set(false)">
+        <app-icon name="x" />
+      </button>
+    </div>
+
+    <nav>
+      <ul>
+        @for (item of navItems; track item.path) {
+          <li>
+            <a [routerLink]="item.path" class="nav-link" [class.active]="isActive(item)" [attr.aria-current]="isActive(item) ? 'page' : null">
+              <app-icon [name]="item.icon" [size]="19" />
+              <span>{{ item.label }}</span>
+              @if (item.path === '/reminders' && badgeCount() > 0) {
+                <span class="count">{{ badgeCount() }}</span>
+              }
+            </a>
+          </li>
+        }
+      </ul>
+    </nav>
+
+    <button type="button" class="nav-link logout" (click)="logout()">
+      <app-icon name="log-out" [size]="19" />
+      <span>Logout</span>
+    </button>
+  </aside>
+
+  @if (menuOpen()) {
+    <div class="scrim" (click)="menuOpen.set(false)"></div>
+  }
+
+  <div class="main">
+    <header class="topbar">
+      <button type="button" class="btn-icon menu-btn" aria-label="Open menu" (click)="menuOpen.set(true)">
+        <app-icon name="menu" [size]="22" />
+      </button>
+      <div class="mobile-logo"><app-logo [iconOnly]="true" /></div>
+      <span class="section">{{ currentLabel() }}</span>
+      <span class="spacer"></span>
+
+      <a routerLink="/applications/new" class="btn btn-primary btn-sm quick-add">
+        <app-icon name="plus" [size]="16" /> Add Application
+      </a>
+
+      <div class="menu-anchor" data-menu>
+        <button type="button" class="btn-icon bell" aria-label="Notifications" [attr.aria-expanded]="notificationsOpen()" (click)="toggleNotifications()">
+          <app-icon name="bell" [size]="20" />
+          @if (badgeCount() > 0) {
+            <span class="dot">{{ badgeCount() > 9 ? '9+' : badgeCount() }}</span>
+          }
+        </button>
+        @if (notificationsOpen()) {
+          <div class="popover notifications" role="menu">
+            <div class="popover-title">Reminders due soon</div>
+            @if (dueReminders().length === 0) {
+              <p class="popover-empty muted text-sm">You're all caught up. Nothing is due today or tomorrow.</p>
+            } @else {
+              <ul>
+                @for (reminder of dueReminders().slice(0, 5); track reminder.id) {
+                  <li>
+                    <a [routerLink]="reminder.application_id ? ['/applications', reminder.application_id] : ['/reminders']">
+                      <span class="t">{{ reminder.title }}</span>
+                      <span class="s" [class.late]="reminder.reminder_date < today">
+                        {{ reminder.reminder_date | relday }}@if (reminder.reminder_time) { — {{ reminder.reminder_time | ftime }}}
+                      </span>
+                    </a>
+                  </li>
+                }
+              </ul>
+            }
+            <a routerLink="/reminders" class="popover-link">View all reminders</a>
+          </div>
+        }
+      </div>
+
+      <div class="menu-anchor" data-menu>
+        <button type="button" class="profile-btn" [attr.aria-expanded]="profileOpen()" (click)="toggleProfile()">
+          <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+          <span class="name truncate">{{ auth.user()?.full_name }}</span>
+          <app-icon name="chevron-down" [size]="16" />
+        </button>
+        @if (profileOpen()) {
+          <div class="popover profile" role="menu">
+            <div class="who">
+              <strong class="truncate">{{ auth.user()?.full_name }}</strong>
+              <span class="text-sm muted truncate">{{ auth.user()?.email }}</span>
+              @if (auth.user()?.is_demo) {
+                <span class="chip chip-accent">Demo account</span>
+              }
+            </div>
+            <a routerLink="/settings" class="item"><app-icon name="settings" [size]="17" /> Settings</a>
+            <button type="button" class="item" (click)="logout()"><app-icon name="log-out" [size]="17" /> Logout</button>
+          </div>
+        }
+      </div>
+    </header>
+
+    <main class="content" id="main-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

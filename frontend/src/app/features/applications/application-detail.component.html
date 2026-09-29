@@ -1,0 +1,148 @@
+@if (loading()) {
+  <div class="skeleton" style="height: 150px"></div>
+  <div class="detail-grid" style="margin-top: 1rem">
+    <div class="skeleton" style="height: 420px"></div>
+    <div class="skeleton" style="height: 420px"></div>
+  </div>
+} @else if (error()) {
+  <div class="card">
+    <app-empty-state icon="alert" title="Application not found" [message]="error()" actionLabel="Back to applications" actionLink="/applications" />
+  </div>
+} @else if (application(); as a) {
+  <a routerLink="/applications" class="back text-sm"><app-icon name="arrow-left" [size]="15" /> All applications</a>
+
+  <header class="card hero">
+    <div class="hero-main">
+      <div class="title-block">
+        <h1>{{ a.job_title }}</h1>
+        <p class="company"><app-icon name="building" [size]="17" />{{ a.company_name }}</p>
+        <div class="row-wrap tags">
+          <app-status-badge [status]="a.status" />
+          @if (a.work_type) { <span class="chip">{{ a.work_type }}</span> }
+          @if (a.employment_type) { <span class="chip">{{ a.employment_type }}</span> }
+          @if (deadlineNote()) { <span class="chip chip-accent"><app-icon name="calendar" [size]="13" />{{ deadlineNote() }}</span> }
+        </div>
+      </div>
+      <div class="hero-actions">
+        <button type="button" class="btn btn-primary" (click)="statusOpen.set(true)"><app-icon name="refresh" [size]="17" /> Update Status</button>
+        <a class="btn btn-secondary" [routerLink]="['/applications', a.id, 'edit']"><app-icon name="pencil" [size]="17" /> Edit</a>
+        @if (a.job_url) {
+          <a class="btn btn-secondary" [href]="a.job_url" target="_blank" rel="noopener noreferrer"><app-icon name="external-link" [size]="17" /> Open Job Posting</a>
+        }
+        <button type="button" class="btn btn-danger-soft" (click)="deleteApplication()"><app-icon name="trash" [size]="17" /> Delete</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="detail-grid">
+    <div class="col">
+      <section class="card">
+        <div class="card-header"><h2>Job information</h2></div>
+        <dl class="facts">
+          @for (fact of facts(); track fact.label) {
+            <div class="fact">
+              <dt><app-icon [name]="fact.icon" [size]="15" />{{ fact.label }}</dt>
+              <dd [class.faint]="!fact.value">{{ fact.value || 'Not specified' }}</dd>
+            </div>
+          }
+          <div class="fact">
+            <dt><app-icon name="send" [size]="15" />Application date</dt>
+            <dd>{{ a.application_date | fdate }}</dd>
+          </div>
+          <div class="fact">
+            <dt><app-icon name="calendar" [size]="15" />Deadline</dt>
+            <dd [class.faint]="!a.deadline">{{ a.deadline ? (a.deadline | fdate) : 'Not specified' }}</dd>
+          </div>
+          <div class="fact wide">
+            <dt><app-icon name="globe" [size]="15" />Job URL</dt>
+            <dd>
+              @if (a.job_url) { <a [href]="a.job_url" target="_blank" rel="noopener noreferrer" class="truncate url">{{ a.job_url }}</a> } @else { <span class="faint">Not specified</span> }
+            </dd>
+          </div>
+        </dl>
+
+        <div class="skills-block">
+          <h3>Required skills</h3>
+          @if (a.required_skills.length) {
+            <div class="row-wrap">@for (skill of a.required_skills; track skill) { <span class="chip chip-primary">{{ skill }}</span> }</div>
+          } @else {
+            <p class="faint text-sm">No skills listed.</p>
+          }
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header"><h2>Job description</h2></div>
+        @if (a.job_description) {
+          <div class="description" [class.clamped]="longDescription() && !descriptionExpanded()">{{ a.job_description }}</div>
+          @if (longDescription()) {
+            <button type="button" class="link-btn more" (click)="descriptionExpanded.set(!descriptionExpanded())">
+              {{ descriptionExpanded() ? 'Show less' : 'Show full description' }}
+            </button>
+          }
+        } @else {
+          <p class="faint text-sm">No job description saved. <a [routerLink]="['/applications', a.id, 'edit']">Add one</a> to keep it with this application.</p>
+        }
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2>Notes</h2>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="noteOpen.set(true)"><app-icon name="note" [size]="15" /> {{ a.notes ? 'Edit notes' : 'Add notes' }}</button>
+        </div>
+        @if (a.notes) { <p class="notes">{{ a.notes }}</p> } @else { <p class="faint text-sm">No notes yet.</p> }
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="card">
+        <div class="card-header">
+          <h2>Timeline</h2>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="openEvent(null)"><app-icon name="plus" [size]="15" /> Add event</button>
+        </div>
+        @if (a.timeline.length === 0) {
+          <app-empty-state [compact]="true" icon="timeline" title="No timeline events" message="Status changes are added here automatically." actionLabel="Add event" (action)="openEvent(null)" />
+        } @else {
+          <app-timeline-list [events]="a.timeline" [editable]="true" (edit)="openEvent($event)" (remove)="deleteEvent($event)" />
+        }
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2>Reminders</h2>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="openReminder(null)"><app-icon name="plus" [size]="15" /> Add reminder</button>
+        </div>
+        @if (a.reminders.length === 0) {
+          <app-empty-state [compact]="true" icon="bell" title="No reminders" message="Add a reminder for a follow-up, interview or deadline." actionLabel="Add reminder" (action)="openReminder(null)" />
+        } @else {
+          <ul class="reminders">
+            @for (r of openReminders(); track r.id) {
+              <li>
+                <button type="button" class="check" [attr.aria-label]="'Mark ' + r.title + ' as completed'" (click)="toggleReminder(r)"><app-icon name="check" [size]="14" /></button>
+                <div class="body">
+                  <strong>{{ r.title }}</strong>
+                  <span class="text-sm" [class.late]="isLate(r)" [class.muted]="!isLate(r)"><app-icon [name]="reminderIcon(r)" [size]="13" /> {{ r.reminder_date | relday }}@if (r.reminder_time) { — {{ r.reminder_time | ftime }}}</span>
+                  @if (r.notes) { <span class="text-sm faint">{{ r.notes }}</span> }
+                </div>
+                <button type="button" class="btn-icon" aria-label="Edit reminder" (click)="openReminder(r)"><app-icon name="pencil" [size]="15" /></button>
+                <button type="button" class="btn-icon danger" aria-label="Delete reminder" (click)="deleteReminder(r)"><app-icon name="trash" [size]="15" /></button>
+              </li>
+            }
+            @for (r of doneReminders(); track r.id) {
+              <li class="done">
+                <button type="button" class="check on" [attr.aria-label]="'Reopen ' + r.title" (click)="toggleReminder(r)"><app-icon name="check" [size]="14" /></button>
+                <div class="body"><strong>{{ r.title }}</strong><span class="text-sm faint">Completed</span></div>
+                <button type="button" class="btn-icon danger" aria-label="Delete reminder" (click)="deleteReminder(r)"><app-icon name="trash" [size]="15" /></button>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
+  </div>
+
+  <app-status-dialog [open]="statusOpen()" [application]="a" (closed)="statusOpen.set(false)" (saved)="afterChange()" />
+  <app-note-dialog [open]="noteOpen()" [application]="a" (closed)="noteOpen.set(false)" (saved)="afterChange()" />
+  <app-timeline-event-dialog [open]="eventOpen()" [applicationId]="a.id" [event]="editingEvent()" (closed)="eventOpen.set(false)" (saved)="afterChange()" />
+  <app-reminder-dialog [open]="reminderOpen()" [reminder]="editingReminder()" [applicationId]="a.id" [defaultTitle]="reminderDefaultTitle()" (closed)="reminderOpen.set(false)" (saved)="afterChange()" />
+}

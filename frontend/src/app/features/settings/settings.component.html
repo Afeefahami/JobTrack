@@ -1,0 +1,79 @@
+<app-page-header title="Settings" subtitle="Manage your profile, password and how JobTrack looks." />
+
+<div class="layout">
+  <section class="card">
+    <div class="card-header"><h2>Profile information</h2></div>
+    @if (profileError()) {
+      <div class="alert alert-error" role="alert" style="margin-bottom: 1rem"><app-icon name="alert" [size]="16" /><span>{{ profileError() }}</span></div>
+    }
+    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" novalidate class="stack">
+      <div class="form-grid">
+        <div class="field" [class.invalid]="profileForm.controls.full_name.invalid && profileForm.controls.full_name.touched">
+          <label for="s-name">Full name</label>
+          <input id="s-name" type="text" formControlName="full_name" autocomplete="name" />
+          @if (profileForm.controls.full_name.invalid && profileForm.controls.full_name.touched) { <span class="error">Please enter your full name.</span> }
+        </div>
+        <div class="field" [class.invalid]="profileForm.controls.email.invalid && profileForm.controls.email.touched">
+          <label for="s-email">Email</label>
+          <input id="s-email" type="email" formControlName="email" autocomplete="email" />
+          @if (profileForm.controls.email.invalid && profileForm.controls.email.touched) { <span class="error">Please enter a valid email address.</span> }
+        </div>
+      </div>
+      <div class="row">
+        <button type="submit" class="btn btn-primary" [disabled]="profileSaving()">@if (profileSaving()) { <span class="spinner"></span> } Save profile</button>
+        @if (auth.user(); as user) { <span class="text-sm faint">Member since {{ user.created_at | fdate }}</span> }
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2>Change password</h2></div>
+    @if (passwordError()) {
+      <div class="alert alert-error" role="alert" style="margin-bottom: 1rem"><app-icon name="alert" [size]="16" /><span>{{ passwordError() }}</span></div>
+    }
+    <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" novalidate class="stack">
+      <div class="field" [class.invalid]="passwordForm.controls.current_password.invalid && passwordForm.controls.current_password.touched">
+        <label for="p-current">Current password</label>
+        <input id="p-current" type="password" formControlName="current_password" autocomplete="current-password" />
+        @if (passwordForm.controls.current_password.invalid && passwordForm.controls.current_password.touched) { <span class="error">Please enter your current password.</span> }
+      </div>
+      <div class="form-grid">
+        <div class="field" [class.invalid]="passwordForm.controls.new_password.invalid && passwordForm.controls.new_password.touched">
+          <label for="p-new">New password</label>
+          <input id="p-new" type="password" formControlName="new_password" autocomplete="new-password" />
+          <ul class="rules">
+            <li [class.ok]="checks().length">{{ checks().length ? '✓' : '•' }} 8+ characters</li>
+            <li [class.ok]="checks().upper">{{ checks().upper ? '✓' : '•' }} Uppercase</li>
+            <li [class.ok]="checks().lower">{{ checks().lower ? '✓' : '•' }} Lowercase</li>
+            <li [class.ok]="checks().digit">{{ checks().digit ? '✓' : '•' }} Number</li>
+          </ul>
+        </div>
+        <div class="field" [class.invalid]="passwordForm.controls.confirm_password.touched && passwordForm.hasError('mismatch')">
+          <label for="p-confirm">Confirm new password</label>
+          <input id="p-confirm" type="password" formControlName="confirm_password" autocomplete="new-password" />
+          @if (passwordForm.controls.confirm_password.touched && passwordForm.hasError('mismatch')) { <span class="error">Passwords do not match.</span> }
+        </div>
+      </div>
+      <div><button type="submit" class="btn btn-primary" [disabled]="passwordSaving()">@if (passwordSaving()) { <span class="spinner"></span> } Update password</button></div>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2>Appearance</h2></div>
+    <div class="themes" role="radiogroup" aria-label="Theme">
+      @for (option of themes; track option.value) {
+        <button type="button" role="radio" class="theme" [class.on]="theme.preference() === option.value" [attr.aria-checked]="theme.preference() === option.value" (click)="theme.set(option.value)">
+          <app-icon [name]="option.icon" [size]="20" />
+          <span>{{ option.label }}</span>
+        </button>
+      }
+    </div>
+    <p class="text-sm faint" style="margin-top: 0.75rem">"System" follows your device's light or dark setting.</p>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2>Session</h2></div>
+    <p class="muted text-sm" style="margin-bottom: 1rem">Signed in as {{ auth.user()?.email }}.</p>
+    <button type="button" class="btn btn-secondary" (click)="logout()"><app-icon name="log-out" [size]="17" /> Logout</button>
+  </section>
+</div>

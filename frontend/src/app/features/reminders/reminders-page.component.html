@@ -1,0 +1,66 @@
+<app-page-header title="Reminders" [subtitle]="loading() ? '' : openCount() + (openCount() === 1 ? ' open reminder' : ' open reminders')">
+  <button type="button" class="btn btn-primary" (click)="openDialog(null)"><app-icon name="plus" [size]="18" /> Add reminder</button>
+</app-page-header>
+
+@if (loading()) {
+  <div class="skeleton" style="height: 300px"></div>
+} @else if (error()) {
+  <div class="card"><app-empty-state icon="alert" title="Reminders unavailable" [message]="error()" actionLabel="Try again" (action)="load()" /></div>
+} @else if (reminders().length === 0) {
+  <div class="card">
+    <app-empty-state icon="bell" title="No reminders yet" message="Add a reminder for a follow-up, an interview or an application deadline." actionLabel="+ Add reminder" (action)="openDialog(null)" />
+  </div>
+} @else {
+  @if (sections().length === 0) {
+    <div class="card"><app-empty-state icon="check-circle" title="You're all caught up" message="There are no open reminders. Add one whenever you need a nudge." actionLabel="+ Add reminder" (action)="openDialog(null)" /></div>
+  }
+
+  @for (section of sections(); track section.key) {
+    <section class="section">
+      <h2 class="section-title" [class.late]="section.tone === 'late'">{{ section.title }} <span class="count">{{ section.items.length }}</span></h2>
+      <div class="card list">
+        @for (r of section.items; track r.id) {
+          <div class="item">
+            <button type="button" class="check" [attr.aria-label]="'Mark ' + r.title + ' as completed'" (click)="toggle(r)"><app-icon name="check" [size]="14" /></button>
+            <span class="glyph"><app-icon [name]="icon(r)" [size]="17" /></span>
+            <div class="body">
+              <strong>{{ r.title }}</strong>
+              <span class="text-sm muted">
+                <span [class.late]="section.tone === 'late'">{{ r.reminder_date | relday }}@if (r.reminder_time) { — {{ r.reminder_time | ftime }}}</span>
+                · {{ r.type }}
+                @if (r.application_id) { · <a [routerLink]="['/applications', r.application_id]">{{ r.job_title }} at {{ r.company_name }}</a> }
+              </span>
+              @if (r.notes) { <span class="text-sm faint">{{ r.notes }}</span> }
+            </div>
+            <button type="button" class="btn-icon" aria-label="Edit reminder" (click)="openDialog(r)"><app-icon name="pencil" [size]="16" /></button>
+            <button type="button" class="btn-icon danger" aria-label="Delete reminder" (click)="remove(r)"><app-icon name="trash" [size]="16" /></button>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  @if (completed().length) {
+    <section class="section">
+      <button type="button" class="link-btn toggle" (click)="showCompleted.set(!showCompleted())">
+        {{ showCompleted() ? 'Hide' : 'Show' }} completed ({{ completed().length }})
+      </button>
+      @if (showCompleted()) {
+        <div class="card list done">
+          @for (r of completed(); track r.id) {
+            <div class="item">
+              <button type="button" class="check on" [attr.aria-label]="'Reopen ' + r.title" (click)="toggle(r)"><app-icon name="check" [size]="14" /></button>
+              <div class="body">
+                <strong>{{ r.title }}</strong>
+                <span class="text-sm faint">{{ r.reminder_date | relday }}@if (r.company_name) { · {{ r.company_name }} }</span>
+              </div>
+              <button type="button" class="btn-icon danger" aria-label="Delete reminder" (click)="remove(r)"><app-icon name="trash" [size]="16" /></button>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+}
+
+<app-reminder-dialog [open]="dialogOpen()" [reminder]="editing()" [applications]="applications()" (closed)="dialogOpen.set(false)" (saved)="onSaved()" />

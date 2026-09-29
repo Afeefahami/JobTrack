@@ -1,0 +1,168 @@
+<app-page-header [title]="title()" subtitle="Here is where your job search stands today.">
+  <a routerLink="/applications/new" class="btn btn-primary"><app-icon name="plus" [size]="18" /> Add Application</a>
+</app-page-header>
+
+@if (loading()) {
+  <div class="stats">
+    @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+      <div class="skeleton" style="height: 112px"></div>
+    }
+  </div>
+  <div class="skeleton" style="height: 300px; margin-top: 1.25rem"></div>
+} @else if (error()) {
+  <div class="card">
+    <app-empty-state icon="alert" title="Dashboard unavailable" [message]="error()" actionLabel="Try again" (action)="load()" />
+  </div>
+} @else if (stats(); as s) {
+  @if (s.summary.total === 0) {
+    <div class="card">
+      <app-empty-state
+        icon="briefcase"
+        title="No applications yet"
+        message="Start tracking your first job application."
+        actionLabel="+ Add Application"
+        actionLink="/applications/new"
+      />
+    </div>
+  } @else {
+    @if (s.overdue_reminders > 0) {
+      <div class="alert alert-warn overdue">
+        <app-icon name="bell" [size]="17" />
+        <span>
+          You have {{ s.overdue_reminders }} overdue {{ s.overdue_reminders === 1 ? 'reminder' : 'reminders' }}.
+          <a routerLink="/reminders">Review them</a>
+        </span>
+      </div>
+    }
+
+    <section class="stats" aria-label="Summary">
+      @for (card of cards(); track card.label) {
+        <a class="stat" [class.featured]="card.featured" [attr.data-tone]="card.tone" [routerLink]="card.link" [queryParams]="card.query ?? null">
+          <span class="icon"><app-icon [name]="card.icon" [size]="20" /></span>
+          <span class="value">{{ card.value }}</span>
+          <span class="label">{{ card.label }}</span>
+          <span class="hint">{{ card.hint }}</span>
+        </a>
+      }
+    </section>
+
+    <section class="charts">
+      <div class="card span-5">
+        <div class="card-header"><h2>Applications by status</h2></div>
+        <app-chart kind="doughnut" [labels]="statusLabels()" [values]="statusValues()" [colors]="statusColors()" label="Applications by status" [height]="290" />
+      </div>
+      <div class="card span-7">
+        <div class="card-header"><h2>Applications over time</h2><span class="text-sm muted">Last 6 months</span></div>
+        <app-chart kind="line" [labels]="timeLabels()" [values]="timeValues()" [colors]="['--primary']" seriesLabel="Applications" label="Applications per month" [height]="290" />
+      </div>
+      <div class="card span-7">
+        <div class="card-header">
+          <h2>Application progress</h2>
+          <span class="text-sm muted">{{ s.interview_rate }}% reached interviews · {{ s.offer_rate }}% reached offers</span>
+        </div>
+        <app-chart kind="hbar" [labels]="funnelLabels()" [values]="funnelValues()" [colors]="funnelColors" seriesLabel="Applications" label="Application progress by stage" [height]="250" />
+      </div>
+      <div class="card span-5">
+        <div class="card-header"><h2>Interviews per month</h2><span class="text-sm muted">{{ totalInterviewEvents() }} in total</span></div>
+        <app-chart kind="bar" [labels]="interviewLabels()" [values]="interviewValues()" [colors]="['--tone-indigo']" seriesLabel="Interviews" label="Interviews per month" [height]="250" />
+      </div>
+    </section>
+
+    <section class="lists">
+      <div class="card">
+        <div class="card-header"><h2>Upcoming interviews</h2></div>
+        @if (s.upcoming_interviews.length === 0) {
+          <app-empty-state [compact]="true" icon="video" title="No interviews scheduled" message="Interviews you add to a timeline show up here." />
+        } @else {
+          <ul class="items">
+            @for (item of s.upcoming_interviews; track item.event_id) {
+              <li>
+                <span class="glyph" [attr.data-tone]="eventTone(item.event_type)"><app-icon [name]="eventIcon(item.event_type)" [size]="17" /></span>
+                <a class="body" [routerLink]="['/applications', item.application_id]">
+                  <strong class="truncate">{{ item.job_title }}</strong>
+                  <span class="text-sm muted truncate">{{ item.company_name }} · {{ item.event_type }}</span>
+                </a>
+                <span class="when">{{ item.event_date | relday }}@if (item.event_time) {<small>{{ item.event_time | ftime }}</small>}</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Upcoming deadlines</h2></div>
+        @if (s.upcoming_deadlines.length === 0) {
+          <app-empty-state [compact]="true" icon="calendar" title="No deadlines coming up" message="Add a deadline to an application to see it here." />
+        } @else {
+          <ul class="items">
+            @for (item of s.upcoming_deadlines; track item.application_id) {
+              <li>
+                <span class="glyph" [attr.data-tone]="item.days_left <= 3 ? 'amber' : 'slate'"><app-icon name="calendar" [size]="17" /></span>
+                <a class="body" [routerLink]="['/applications', item.application_id]">
+                  <strong class="truncate">{{ item.job_title }}</strong>
+                  <span class="text-sm muted truncate">{{ item.company_name }} · {{ item.deadline | fdate: 'short' }}</span>
+                </a>
+                <span class="chip" [class.chip-accent]="item.days_left <= 3">{{ item.days_left === 0 ? 'Today' : item.days_left === 1 ? 'Tomorrow' : item.days_left + ' days' }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Upcoming reminders</h2><a routerLink="/reminders" class="text-sm strong">View all</a></div>
+        @if (s.upcoming_reminders.length === 0) {
+          <app-empty-state [compact]="true" icon="bell" title="No reminders" message="Set a reminder so follow-ups never slip." actionLabel="Go to reminders" actionLink="/reminders" />
+        } @else {
+          <ul class="items">
+            @for (item of s.upcoming_reminders; track item.id) {
+              <li>
+                <button type="button" class="check" [attr.aria-label]="'Mark ' + item.title + ' as completed'" (click)="complete(item.id)"><app-icon name="check" [size]="14" /></button>
+                <div class="body">
+                  <strong class="truncate">{{ item.title }}</strong>
+                  <span class="text-sm muted truncate">{{ item.reminder_date | relday }}@if (item.reminder_time) { — {{ item.reminder_time | ftime }}}@if (item.company_name) { · {{ item.company_name }}}</span>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2>Recent applications</h2><a routerLink="/applications" class="text-sm strong">View all</a></div>
+        <ul class="items">
+          @for (item of s.recent_applications; track item.id) {
+            <li>
+              <span class="glyph" data-tone="teal"><app-icon name="building" [size]="17" /></span>
+              <a class="body" [routerLink]="['/applications', item.id]">
+                <strong class="truncate">{{ item.job_title }}</strong>
+                <span class="text-sm muted truncate">{{ item.company_name }} · {{ item.application_date | fdate: 'short' }}</span>
+              </a>
+              <app-status-badge [status]="item.status" />
+            </li>
+          }
+        </ul>
+      </div>
+
+      <div class="card wide">
+        <div class="card-header"><h2>Recent timeline activity</h2><a routerLink="/timeline" class="text-sm strong">Open timeline</a></div>
+        @if (s.recent_activity.length === 0) {
+          <app-empty-state [compact]="true" icon="timeline" title="No activity yet" message="Status changes and events appear here." />
+        } @else {
+          <ul class="items two-col">
+            @for (item of s.recent_activity; track item.event_id) {
+              <li>
+                <span class="glyph" [attr.data-tone]="eventTone(item.event_type)"><app-icon [name]="eventIcon(item.event_type)" [size]="17" /></span>
+                <a class="body" [routerLink]="['/applications', item.application_id]">
+                  <strong class="truncate">{{ item.event_type }}</strong>
+                  <span class="text-sm muted truncate">{{ item.job_title }} · {{ item.company_name }}</span>
+                </a>
+                <span class="when muted">{{ item.event_date | fdate: 'short' }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </section>
+  }
+}

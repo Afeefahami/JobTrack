@@ -1,0 +1,146 @@
+<app-page-header [title]="isEdit() ? 'Edit application' : 'Add Application'" [subtitle]="isEdit() ? 'Update the details of this application.' : 'Paste a job description and let JobTrack fill in the details for you.'">
+  <a [routerLink]="isEdit() ? ['/applications', id()] : ['/applications']" class="btn btn-secondary"><app-icon name="arrow-left" [size]="17" /> Back</a>
+</app-page-header>
+
+@if (loading()) {
+  <div class="skeleton" style="height: 260px"></div>
+  <div class="skeleton" style="height: 420px; margin-top: 1rem"></div>
+} @else if (loadError()) {
+  <div class="card"><app-empty-state icon="alert" title="Application unavailable" [message]="loadError()" actionLabel="Try again" (action)="reload()" /></div>
+} @else {
+  <form [formGroup]="form" (ngSubmit)="save()" novalidate class="layout">
+
+    <section class="card paste">
+      <div class="paste-head">
+        <span class="paste-icon"><app-icon name="clipboard" [size]="22" /></span>
+        <div>
+          <h2><label for="job_description">Paste Job Description</label></h2>
+          <p class="muted text-sm">Copy the full posting from LinkedIn, Indeed or a company site and paste it here. The text is saved with the application.</p>
+        </div>
+      </div>
+
+      <textarea id="job_description" formControlName="job_description" rows="11" placeholder="Paste the complete job description here…&#10;&#10;JobTrack looks for the title, company, location, work type, skills, experience and salary."></textarea>
+
+      <div class="paste-actions">
+        <button type="button" class="btn btn-primary" (click)="extract()" [disabled]="extracting()">
+          @if (extracting()) { <span class="spinner"></span> Reading the description… } @else { <app-icon name="sparkles" [size]="18" /> Extract Details }
+        </button>
+        <span class="text-sm faint">Only details found in the text are filled in. Everything stays editable.</span>
+      </div>
+
+      @if (extractError()) {
+        <div class="alert alert-error" role="alert"><app-icon name="alert" [size]="16" /><span>{{ extractError() }}</span></div>
+      }
+      @if (extractResult(); as result) {
+        @if (result.found_fields.length === 0) {
+          <div class="alert alert-warn" role="status"><app-icon name="info" [size]="16" /><span>{{ result.message }}</span></div>
+        } @else {
+          <div class="alert alert-success" role="status">
+            <app-icon name="check-circle" [size]="16" />
+            <span>
+              <strong>Filled {{ foundLabels().length }} {{ foundLabels().length === 1 ? 'field' : 'fields' }}:</strong> {{ foundLabels().join(', ') }}.
+              Please review them below.
+              @if (result.message) { {{ result.message }} }
+              @if (result.method === 'ai') { <span class="chip chip-primary">AI assisted</span> }
+            </span>
+          </div>
+        }
+      }
+    </section>
+
+    <section class="card">
+      <div class="card-header"><h2>Application details</h2></div>
+      <div class="form-grid">
+        <div class="field" [class.invalid]="invalid('job_title')">
+          <label for="job_title">Job title <span class="req">*</span>@if (isAuto('job_title')) { <span class="auto"><app-icon name="sparkles" [size]="12" /> Auto-filled</span> }</label>
+          <input id="job_title" type="text" formControlName="job_title" placeholder="Python Developer" maxlength="200" />
+          @if (invalid('job_title')) { <span class="error">{{ message('job_title') }}</span> }
+        </div>
+
+        <div class="field" [class.invalid]="invalid('company_name')">
+          <label for="company_name">Company name <span class="req">*</span>@if (isAuto('company_name')) { <span class="auto"><app-icon name="sparkles" [size]="12" /> Auto-filled</span> }</label>
+          <input id="company_name" type="text" formControlName="company_name" placeholder="ABC Technologies" maxlength="200" />
+          @if (invalid('company_name')) { <span class="error">{{ message('company_name') }}</span> }
+        </div>
+
+        <div class="field">
+          <label for="location">Location@if (isAuto('location')) { <span class="auto"><app-icon name="sparkles" [size]="12" /> Auto-filled</span> }</label>
+          <input id="location" type="text" formControlName="location" placeholder="Kochi, Kerala" maxlength="200" />
+        </div>
+
+        <div class="field">
+          <label for="work_type">Work type@if (isAuto('work_type')) { <span class="auto"><app-icon name="sparkles" [size]="12" /> Auto-filled</span> }</label>
+          <select id="work_type" formControlName="work_type">
+            <option value="">Not specified</option>
+            @for (type of workTypes; track type) { <option [value]="type">{{ type }}</option> }
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="employment_type">Employment type@if (isAuto('employment_type')) { <span class="auto"><app-icon name="sparkles" [size]="12" /> Auto-filled</span> }</label>
+          <select id="employment_type" formControlName="employment_type">
+            <option value="">Not specified</option>
+            @for (type of employmentTypes; track type) { <option [value]="type">{{ type }}</option> }
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="experience_required">Experience required@if (isAuto('experience_required')) { <span class="auto"><app-icon name="sparkles" [size]="12" /> Auto-filled</span> }</label>
+          <input id="experience_required" type="text" formControlName="experience_required" placeholder="2-4 years" maxlength="100" />
+        </div>
+
+        <div class="field">
+          <label for="salary">Salary@if (isAuto('salary')) { <span class="auto"><app-icon name="sparkles" [size]="12" /> Auto-filled</span> }</label>
+          <input id="salary" type="text" formControlName="salary" placeholder="₹6,00,000 - ₹9,00,000 per annum" maxlength="120" />
+        </div>
+
+        <div class="field" [class.invalid]="invalid('job_url')">
+          <label for="job_url">Job URL</label>
+          <input id="job_url" type="text" inputmode="url" formControlName="job_url" placeholder="https://www.linkedin.com/jobs/view/…" />
+          @if (invalid('job_url')) { <span class="error">{{ message('job_url') }}</span> }
+        </div>
+
+        <div class="field full">
+          <label for="skills">Required skills@if (isAuto('required_skills')) { <span class="auto"><app-icon name="sparkles" [size]="12" /> Auto-filled</span> }</label>
+          <app-skills-input id="skills" formControlName="required_skills" />
+          <span class="hint">Press Enter or comma after each skill.</span>
+        </div>
+
+        <div class="field" [class.invalid]="invalid('application_date')">
+          <label for="application_date">Application date <span class="req">*</span></label>
+          <input id="application_date" type="date" formControlName="application_date" />
+          @if (invalid('application_date')) { <span class="error">{{ message('application_date') }}</span> }
+        </div>
+
+        <div class="field">
+          <label for="deadline">Deadline</label>
+          <input id="deadline" type="date" formControlName="deadline" />
+        </div>
+
+        <div class="field">
+          <label for="status">Status</label>
+          <select id="status" formControlName="status">
+            @for (status of statuses; track status) { <option [value]="status">{{ status }}</option> }
+          </select>
+          @if (isEdit()) { <span class="hint">Changing the status adds an event to the timeline.</span> }
+        </div>
+
+        <div class="field full">
+          <label for="notes">Notes</label>
+          <textarea id="notes" formControlName="notes" rows="4" placeholder="Referral contact, salary expectations, interview prep…" maxlength="10000"></textarea>
+        </div>
+      </div>
+    </section>
+
+    @if (saveError()) {
+      <div class="alert alert-error" role="alert"><app-icon name="alert" [size]="16" /><span>{{ saveError() }}</span></div>
+    }
+
+    <div class="actions">
+      <a [routerLink]="isEdit() ? ['/applications', id()] : ['/applications']" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary" [disabled]="saving()">
+        @if (saving()) { <span class="spinner"></span> Saving… } @else { <app-icon name="check" [size]="18" /> {{ isEdit() ? 'Save changes' : 'Save application' }} }
+      </button>
+    </div>
+  </form>
+}

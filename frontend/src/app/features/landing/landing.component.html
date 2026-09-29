@@ -1,0 +1,235 @@
+<a class="skip" href="#why">Skip to content</a>
+
+<header class="nav" [class.open]="menuOpen()">
+  <div class="wrap nav-inner">
+    <a routerLink="/" class="brand" aria-label="JobTrack home"><app-logo /></a>
+    <nav class="links" aria-label="Sections">
+      <a href="#why">Why JobTrack?</a>
+      <a href="#tracking">Tracking</a>
+      <a href="#import">Import</a>
+      <a href="#timeline">Timeline</a>
+      <a href="#reminders">Reminders</a>
+      <a href="#analytics">Analytics</a>
+    </nav>
+    <div class="nav-actions">
+      @if (auth.isAuthenticated()) {
+        <a routerLink="/dashboard" class="btn btn-primary btn-sm">Open dashboard</a>
+      } @else {
+        <a routerLink="/login" class="btn btn-ghost btn-sm">Sign In</a>
+        <a routerLink="/register" class="btn btn-primary btn-sm">Get Started</a>
+      }
+      <button type="button" class="btn-icon burger" [attr.aria-expanded]="menuOpen()" aria-label="Menu" (click)="menuOpen.set(!menuOpen())">
+        <app-icon [name]="menuOpen() ? 'x' : 'menu'" [size]="22" />
+      </button>
+    </div>
+  </div>
+  @if (menuOpen()) {
+    <nav class="mobile-links" aria-label="Sections" (click)="menuOpen.set(false)">
+      <a href="#why">Why JobTrack?</a><a href="#tracking">Tracking</a><a href="#import">Import</a>
+      <a href="#timeline">Timeline</a><a href="#reminders">Reminders</a><a href="#analytics">Analytics</a>
+    </nav>
+  }
+</header>
+
+<main>
+  <!-- ============================ Hero ============================ -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <h1>JobTrack — Your Career, Organized.</h1>
+        <p class="lead">Track your job applications, manage interviews, monitor deadlines, and keep your entire job search journey organized in one place.</p>
+        <div class="hero-cta">
+          <a routerLink="/register" class="btn btn-primary btn-lg">Get Started</a>
+          <a routerLink="/login" class="btn btn-secondary btn-lg">Sign In</a>
+        </div>
+        <p class="hero-note">Free to run on your own computer. Your data stays with you.</p>
+      </div>
+
+      <div class="demo" aria-label="Animated example: pasting a job description fills in the application form">
+        <div class="demo-card">
+          <div class="pane paste">
+            <div class="pane-title"><app-icon name="clipboard" [size]="16" /> Paste Job Description</div>
+            <pre class="posting" aria-hidden="true">{{ typedText() }}<span class="caret" [class.off]="typed() >= 999"></span></pre>
+            <div class="extract-btn" [class.busy]="extracting()"><app-icon name="sparkles" [size]="15" /> Extract Details</div>
+          </div>
+          <div class="pane form">
+            <div class="pane-title">Application details</div>
+            <dl>
+              @for (field of fields; track field.label; let i = $index) {
+                <div class="line" [class.on]="i < revealed()">
+                  <dt>{{ field.label }}</dt>
+                  <dd>
+                    @if (field.chips) { @for (chip of field.chips; track chip) { <span class="chip chip-primary">{{ chip }}</span> } } @else { {{ field.value }} }
+                  </dd>
+                </div>
+              }
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ Why ============================ -->
+  <section class="section" id="why">
+    <div class="wrap">
+      <div class="section-head" appReveal>
+        <h2>Why JobTrack?</h2>
+        <p>A job search means dozens of applications, each at a different stage. Tabs, spreadsheets and inbox searches only work until the tenth one.</p>
+      </div>
+      <div class="compare" appReveal>
+        <div class="side before">
+          <h3>Without a tracker</h3>
+          <ul>
+            <li><app-icon name="x-circle" [size]="18" /> Which day did I apply to that Python role?</li>
+            <li><app-icon name="x-circle" [size]="18" /> The job post was taken down and the description is gone.</li>
+            <li><app-icon name="x-circle" [size]="18" /> The follow-up email that never got sent.</li>
+            <li><app-icon name="x-circle" [size]="18" /> No idea how many interviews turned into offers.</li>
+          </ul>
+        </div>
+        <div class="side after">
+          <h3>With JobTrack</h3>
+          <ul>
+            <li><app-icon name="check-circle" [size]="18" /> Every application, dated and in one list.</li>
+            <li><app-icon name="check-circle" [size]="18" /> The full job description saved with it.</li>
+            <li><app-icon name="check-circle" [size]="18" /> Reminders for follow-ups, interviews and deadlines.</li>
+            <li><app-icon name="check-circle" [size]="18" /> Charts built from your real results.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ Tracking ============================ -->
+  <section class="section alt" id="tracking">
+    <div class="wrap split">
+      <div class="copy" appReveal>
+        <h2>Easy Application Tracking</h2>
+        <p>Every application becomes a job card with its company, location, work type, skills and current status. Change the status in two clicks when the recruiter replies.</p>
+        <ul class="ticks">
+          <li><app-icon name="check" [size]="17" /> Search by title, company, location or skill</li>
+          <li><app-icon name="check" [size]="17" /> Filter by status, work type and date</li>
+          <li><app-icon name="check" [size]="17" /> Add notes, open the original posting, edit any time</li>
+        </ul>
+      </div>
+      <div class="visual" appReveal aria-hidden="true">
+        <div class="mock-card">
+          <div class="mock-top"><div><strong>Python Developer</strong><span class="sub"><app-icon name="building" [size]="14" /> ABC Technologies</span></div><span class="badge" data-tone="blue"><span class="dot"></span>Interview</span></div>
+          <div class="sub row-gap"><span><app-icon name="map-pin" [size]="14" /> Kochi</span><span><app-icon name="briefcase" [size]="14" /> Hybrid</span></div>
+          <div class="chips"><span class="chip">Python</span><span class="chip">FastAPI</span><span class="chip">SQL</span></div>
+          <div class="mock-foot"><span class="btn btn-primary btn-sm">View details</span><span class="btn btn-secondary btn-sm">Edit</span><span class="btn btn-secondary btn-sm">Update status</span></div>
+        </div>
+        <div class="mock-card offset">
+          <div class="mock-top"><div><strong>Frontend Developer</strong><span class="sub"><app-icon name="building" [size]="14" /> Pixel &amp; Co</span></div><span class="badge" data-tone="amber"><span class="dot"></span>Under Review</span></div>
+          <div class="sub row-gap"><span><app-icon name="map-pin" [size]="14" /> Bengaluru</span><span><app-icon name="briefcase" [size]="14" /> Remote</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ Import ============================ -->
+  <section class="section" id="import">
+    <div class="wrap">
+      <div class="section-head" appReveal>
+        <h2>Smart Job Description Import</h2>
+        <p>Do not retype what you already read. Paste the posting and JobTrack fills in the form. It only fills what it can actually find in the text, so nothing is made up.</p>
+      </div>
+      <ol class="steps" appReveal>
+        @for (step of steps; track step.title; let i = $index) {
+          <li><span class="n">{{ i + 1 }}</span><strong>{{ step.title }}</strong><span>{{ step.text }}</span></li>
+        }
+      </ol>
+      <p class="fine" appReveal>Works fully offline with built-in extraction. An AI service can be switched on later with a single setting.</p>
+    </div>
+  </section>
+
+  <!-- ============================ Timeline ============================ -->
+  <section class="section alt" id="timeline">
+    <div class="wrap split flip">
+      <div class="copy" appReveal>
+        <h2>Application Timeline</h2>
+        <p>Each application keeps its own history. Change the status and a timeline event is added for you, or log recruiter calls, follow-ups and interviews yourself with the date, time and notes.</p>
+        <ul class="ticks">
+          <li><app-icon name="check" [size]="17" /> Automatic events on every status change</li>
+          <li><app-icon name="check" [size]="17" /> Edit or remove any event</li>
+          <li><app-icon name="check" [size]="17" /> One combined timeline across all applications</li>
+        </ul>
+      </div>
+      <div class="visual" appReveal aria-hidden="true">
+        <ol class="mock-timeline">
+          <li><span class="node" data-tone="slate"><app-icon name="send" [size]="15" /></span><div><strong>Application Submitted</strong><span>15 Sep 2026</span></div></li>
+          <li><span class="node" data-tone="amber"><app-icon name="eye" [size]="15" /></span><div><strong>Under Review</strong><span>18 Sep 2026</span></div></li>
+          <li><span class="node" data-tone="violet"><app-icon name="star" [size]="15" /></span><div><strong>Shortlisted</strong><span>20 Sep 2026</span></div></li>
+          <li><span class="node" data-tone="indigo"><app-icon name="code" [size]="15" /></span><div><strong>Technical Interview</strong><span>25 Sep 2026 · 2:30 PM</span></div></li>
+          <li><span class="node" data-tone="green"><app-icon name="award" [size]="15" /></span><div><strong>Offer Received</strong><span>30 Sep 2026</span></div></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ Reminders ============================ -->
+  <section class="section" id="reminders">
+    <div class="wrap split">
+      <div class="copy" appReveal>
+        <h2>Interview &amp; Deadline Reminders</h2>
+        <p>Set a reminder for a follow-up, an interview, a deadline or a recruiter reply. Upcoming ones sit on your dashboard, and overdue ones are flagged so nothing slips.</p>
+        <ul class="ticks">
+          <li><app-icon name="check" [size]="17" /> Follow-up, interview, deadline and custom reminders</li>
+          <li><app-icon name="check" [size]="17" /> Mark done, edit or delete</li>
+          <li><app-icon name="check" [size]="17" /> Notification badge for what is due today</li>
+        </ul>
+      </div>
+      <div class="visual" appReveal aria-hidden="true">
+        <div class="mock-list">
+          <div class="mock-row"><span class="tick"></span><div><strong>Follow up with ABC Technologies</strong><span>Tomorrow — 10:00 AM</span></div></div>
+          <div class="mock-row"><span class="tick"></span><div><strong>Prepare for technical interview</strong><span>In 2 days — 9:30 AM</span></div></div>
+          <div class="mock-row late"><span class="tick"></span><div><strong>Reply to Nimbus Labs offer</strong><span>Yesterday — 5:00 PM</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ Analytics ============================ -->
+  <section class="section alt" id="analytics">
+    <div class="wrap split flip">
+      <div class="copy" appReveal>
+        <h2>Dashboard Analytics</h2>
+        <p>See where your search stands at a glance: totals by status, applications over time, how far applications progress, and the interviews and deadlines coming up.</p>
+        <ul class="ticks">
+          <li><app-icon name="check" [size]="17" /> Every number comes from your own data</li>
+          <li><app-icon name="check" [size]="17" /> Upcoming interviews, deadlines and reminders</li>
+          <li><app-icon name="check" [size]="17" /> Recent applications and timeline activity</li>
+        </ul>
+      </div>
+      <div class="visual" appReveal aria-hidden="true">
+        <div class="mock-dash">
+          <div class="tiles">
+            <div><b>25</b><span>Total</span></div><div><b>10</b><span>Applied</span></div><div><b>5</b><span>Interviews</span></div><div><b>2</b><span>Offers</span></div>
+          </div>
+          <div class="bars">
+            <i style="height: 28%"></i><i style="height: 44%"></i><i style="height: 36%"></i><i style="height: 62%"></i><i style="height: 80%"></i><i style="height: 100%"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ CTA ============================ -->
+  <section class="cta">
+    <div class="wrap cta-inner" appReveal>
+      <h2>Start with the next job you apply to.</h2>
+      <p>Create an account, paste the description, and your first job card is ready in under a minute.</p>
+      <div class="hero-cta">
+        <a routerLink="/register" class="btn btn-primary btn-lg">Get Started</a>
+        <a routerLink="/login" class="btn btn-lg ghost-light">Sign In</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap foot-inner">
+    <app-logo />
+    <span class="muted text-sm">© {{ year }} JobTrack. Your Career, Organized.</span>
+  </div>
+</footer>
